@@ -32,6 +32,9 @@ api_key = "tu clave api"
 Ejecuta la app:
 python -m streamlit run app.py
 
+link a streamlit para acceso directo:
+https://codeassist-ai-jbgnyy2s8ryxpune7mepxy.streamlit.app
+
 Presentacion escrita del proyecto
 
 https://docs.google.com/document/d/1vqJApyDMI-K9vHXzq8rGRakUhSvDUK2VGrbNLv7zCvw/edit?usp=sharing
