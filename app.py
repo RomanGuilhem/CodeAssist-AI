@@ -1,146 +1,83 @@
 import streamlit as st
 import google.generativeai as genai
+from PIL import Image
 import toml
 
-
 try:
-    secrets = toml.load(".streamlit/secrets.toml")
-    GOOGLE_API_KEY = secrets["api_key"]
-except FileNotFoundError:
-    st.error("Secrets file not found. Make sure '.streamlit/secrets.toml' exists.")
-    st.stop()
+    GOOGLE_API_KEY = st.secrets["api_key"]
 except KeyError:
-    st.error("API key not found in secrets file. Make sure 'api_key' is defined in '.streamlit/secrets.toml'.")
-    st.stop()
-
+    try:
+        secrets = toml.load(".streamlit/secrets.toml")
+        GOOGLE_API_KEY = secrets["api_key"]
+    except FileNotFoundError:
+        st.error("No se encontró el archivo secrets.toml. Asegúrate de que exista y contenga la clave 'api_key'.")
+        st.stop()
+    except KeyError:
+        st.error("El archivo secrets.toml no contiene la clave 'api_key'.")
+        st.stop()
+    except Exception as e:
+        st.error(f"Error al cargar el archivo secrets.toml: {e}")
+        st.stop()
 
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash')
 
+try:
+    model = genai.GenerativeModel("gemini-2.0-flash")
+except Exception as e:
+    st.error(f"Error al cargar el modelo: {e}. Asegúrate de tener instalada la última versión de google-generativeai.")
+    st.stop()
 
-PAGE_TITLE = "CodeAssist-AI"
-PAGE_ICON = ":robot_face:"
-st.set_page_config(page_title=PAGE_TITLE, page_icon=PAGE_ICON)
+def mostrar_imagen(imagen_path):
+    try:
+        imagen = Image.open(imagen_path)
+        st.image(imagen, width=250)
+    except FileNotFoundError:
+        st.error(f"No se encontró la imagen: {imagen_path}")
+    except Exception as e:
+        st.error(f"Error al cargar la imagen: {e}")
 
+st.title("CodeAssist AI con Messi")
 
-st.markdown(
-    """
-    <meta name="description" content="CodeAssist-AI: Your AI-powered code assistant for learning and improving your coding skills."/>
-    """,
-    unsafe_allow_html=True,
+opcion = st.sidebar.selectbox(
+    "¿Qué querés hacer hoy?",
+    ["Generar código", "Corregir código", "Explicar código"]
 )
 
+if opcion == "Generar código":
+    st.subheader("Messi te ayuda a GENERAR código")
+    mostrar_imagen("images/messi.genera.png")
+    input_usuario = st.text_area("Escribí lo que querés que Messi programe por vos")
 
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-color: #EABA6B;
-    }
-    .stTextInput > label {
-        color: #321325;
-    }
-    .stTextArea > label {
-        color: #321325;
-    }
-    .stButton > button {
-        color: white;
-        background-color: #0081AF;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-    }
-    .navbar {
-        background-color: #321325;
-        color: white;
-        padding: 10px;
-        text-align: center;
-        font-size: 20px;
-        font-weight: bold;
-    }
-    .footer {
-        background-color: #321325;
-        color: white;
-        padding: 10px;
-        text-align: center;
-        font-size: 12px;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+    if st.button("Generar"):
+        try:
+            response = model.generate_content(f"Hablá como si fueras Lionel Messi, siendo humilde, claro y argentino. Generá el siguiente código en el lenguaje más adecuado: {input_usuario}")
+            st.markdown("Messi responde:")
+            st.write(response.text)
+        except Exception as e:
+            st.error(f"Error al generar el código: {e}")
 
+elif opcion == "Corregir código":
+    st.subheader("Messi te ayuda a CORREGIR tu código")
+    mostrar_imagen("images/messi.corrector.png")
+    input_usuario = st.text_area("Pegá el código que querés corregir")
 
-st.markdown(
-    """
-    <div class="navbar">CodeAssist-AI</div>
-    """,
-    unsafe_allow_html=True,
-)
+    if st.button("Corregir"):
+        try:
+            response = model.generate_content(f"Hablá como si fueras Messi y explicá qué errores tiene este código y cómo corregirlo, paso a paso, de forma clara y humilde:\n\n{input_usuario}")
+            st.markdown("Messi responde:")
+            st.write(response.text)
+        except Exception as e:
+            st.error(f"Error al corregir el código: {e}")
 
+elif opcion == "Explicar código":
+    st.subheader("Messi te ayuda a EXPLICAR tu código")
+    mostrar_imagen("images/messi.explica.png")
+    input_usuario = st.text_area("Pegá el código que querés que Messi explique")
 
-st.sidebar.header("Navegacion")
-page = st.sidebar.radio("Ir a", ("Corrección de Código", "Generación de Código", "Explicación de Código"))
-
-
-st.markdown(
-    """
-    <div class="footer">
-        &copy; 2025 CodeAssist-AI
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-if page == "Corrección de Código":
-    st.header("El Messi de la programación te ayuda con la corrección de tu código")
-    st.image("data:image/webp;base64,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", width=100)
-    code_input = st.text_area("Ingrese su código aquí:", height=200)
-
-    if st.button("Corregir Código"):
-        if code_input:
-            try:
-                response = model.generate_content(f"Por favor, revise y corrija el siguiente código:\n{code_input}")
-                st.subheader("Código Corregido:")
-                st.write(response.text)
-            except Exception as e:
-                st.error(f"Ocurrió un error: {e}")
-        else:
-            st.warning("Por favor, ingrese algo de código para corregir.")
-
-elif page == "Generación de Código":
-    st.header("Messi hace el codigo por vos bobo, tranquilo, no lo explotes igual que llora")
-    st.image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBBb_gW6IpVDnGwmTWBvUT6T4_d_-9y0STGA&s", width=100)
-    prompt_input = st.text_area("Ingrese un prompt para la generación de código:", height=100)
-
-    if st.button("Generar Código"):
-        if prompt_input:
-            try:
-                response = model.generate_content(prompt_input)
-                st.subheader("Código Generado:")
-                st.write(response.text)
-            except Exception as e:
-                st.error(f"Ocurrió un error: {e}")
-        else:
-            st.warning("Por favor, ingrese un prompt para la generación de código.")
-
-elif page == "Explicación de Código":
-    st.header("Messi te enseña los códigos")
-    st.image("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQAlAMBIgACEQEDEQH/xAAcAAABBQEBAQAAAAAAAAAAAAAEAAMFBgcCAQj/xAA8EAACAQMDAgUCBAQFAgcBAAABAgMABBEFEiEGMRMiQVFhMnEHFIGRFSNCoSRSYrHBM3I0VYKistHSFv/EABsBAAIDAQEBAAAAAAAAAAAAAAECAAMEBQYH/8QAJhEAAgIBAwQCAgMAAAAAAAAAAAECEQMEEiETMUFRFDIFIlJhcf/aAAwDAQACEQMRAD8At9kFW40AME/n2c0Mp3klWVBg5Lf9w3epI9xjjQIzIlrcFGml/MGGYNKF/LgZBOBt35x9ueBUH+WPZdJtuQAxFv39vX5pG1kfDNpVuTjjdbdv3NVdT+jd8WNfYlri8trXTmjmkP8Ag9YPixYL/wAkZbbn4DLz+nNZp1NrN8+p3jWsrp+cu5LW3hTA8mR3IH+pee/ycEmw9SYsdOUy2cNszsI1YQ7Wx3wPjis5v5p0vUnQhURT4LZ7n3FMnZlywUHVklr/AFHqi3MFhaX74tUUO21eXxg545xRdlqmrmBYvzhMjHJIij4/9tVPT4Jp7oJjLliWPvmrppiJajxJHXCjkn/mo2JRYLe7nSySCZvGu5GOxSoAVAMluPnj71G3Os31vq0kZuXdk2rlVQgkkMwHl45Hh/Ybu5oO5v5DILmCUq8kiyynPlgjRiUQfchj78/NGdMaGjyWjeFIFdopFV1wTsAfj2wzxJ9waibDVFo0iadnjW8cyyLCLiZTGF2RCMFvMF/zcAepb4q/2OkxxaVHbyjzsN8hGRliOfX3/Sq/Y2xjkEpxLEZt7lgOYoiDvGB3MgJx7O3sKuiOsg3IQVPIIOc0sm0FVZUtV0CKECWKJTg5cEtz/enLLR4JMW1ygLbd8eScEe3fHFWmWNZVwwFRstu5jeCN1juV88MjD6T7++Pce1V7mWfrXYjbnp88kTScdiuO37VTr2OXSNSma8hWSwCB5k/rgTIHjJg5dRg7lPI7jjgafZTm6t1aSLw5ANskZOdjeoqH6p0Q6jZA2++O5t38SCSMgMD2YDPHmXKn05p4t3yxWlRSOotNvVtw8cu5GG9Xyrce4OOf2rNdSv8AWbS4lb864QnOPDQ8/qtatpbJZW/5JwiaXJgwkjCRNIRsEee0cnPB+h8r2Iqm9aaWsSSKuPEzjHzRk2mBJNFX0jqvUrW6UXV001qzMXRlQDJXGc7cjHBwPatRjuNLhMsl/dwQYmbwh/EruLMfcZSLC+/JySMZrEdRwty6BQAp4xW0dEQ6pqnS1pdWciMkamMkyAEFTjvTKRNqY7PqOgu+5dWgYY7pqmo4/s9KpiXStZRgGmXOAfNeotKmv+g7I/yKjZdIajePCn8ZsIpplWRLUyEs6H+ojHHZsDBzjuOcead0uTcW/wDFNVtLYyXWyGGXaWuUWTa3B+gNhgOSeR2IxUnpd/L4+n32q6DPJqVogT8xDceHDJtztaTP1EAjHfnPbiuFvxdtGdU6aluZba4L2rxXar5fE8RQ53YYhvY8+3emsqplP/EgWWmajNplnZQwmCR28SORjyTgIQfZcH9fmqT+dYQiGWNZIQchT3X7VKdZ6udc6j1C7SERrNcM6qCpYcBcZUkf0jtmoVVxxJkY9KRkJvTvChj8RUk84yFY0cHkuCFZQF9B6VFw3G4RhTkqMAGpvTbe4vr1IIEBxiqmOkS2l6E2o3dlZmImCSQT3LcBViUEncTwPQc96vfSX5fUGudY8sFns8G2kBwQgZjuAPYuxLH1OF/XjS+ibi8sZLXUplhsmYFktSUluBnJR5D2j/0qBzzmr1ZWFrbIkdtbxQxp9CRoFC/YelG6XA6jfc40ew8G1xLHsDAKsRA/loBgL/uT8k0RBaNbT/4dwtseTCR9J/0n0Hfj/b1MUYFLilBQqC1O1lniElqVW6i80RY4BP8AlPwexo7iuWYL3oolWDWrpOwuoSwDKFeNu4I9/kdqKpmJY45JGjwoc5IHv704XXv6VCUysDRGFtPbNllWSRoiy5yjs38vkfT9J+D27Cqv1H05IWMjeZsnA7AE1pMk6DGOaC1C2S8AoN8lkY0qPlTXIHt9VnicHcretbf+BjNN0NcojyxmG8lOUxk5Vay78TbBrDqudSMB1Bq/fg7qx0XpS5DRLOJ71mTEhUY2Ln0PY1ZF0rKtjbpEppelauLCKSw0LpjWYZR4g1C4O6S4z/U5IzuxjNKiYb7S7eNYbXRLG3iQABElC/r9Hf5pU3UiH42X0e6foen39wyWWv6fcyKMyRxDzjI4JAYnsCea4vNL0qyu3hn6n0+KeAgNE5AcNgEArnPqDRv4mywWi6ZcwIf4sZyLcRnbIwKkED3Gdlc9c2Wn33UOhJq0kcSSW91HJmUIUYhGDA/GxqOxC9ebMh6LuRpmvF54IZI5iyETxbuCDgj25I/amOrtItIfDl04y7Y0CN4h5fGfMfn54+wqU0m1mvrm1USo9wzBtqp9S8DP7kfvVz6s6XzpqzxA/wApMSeX27mkb5obbasxqFSCpORir5ps76Dp9jq1i6s1wzoyOpIDDPY+vGKquoWvhZO3FWDTdCln6avL9C7i0TxCvoo9TSoFUWaH8UdWUYktraTHrgipfSvxQSZ8ajFHbqBwwDNk/tWPNKwzyaHmmZkIJJqzagb2b4vXUd9MsNpf2GX4Akl8Mj55qvX3XuoLdyW9vLG+xioeOQMrY9QfasZLMeDzXU0m3aQSCPUVNqBvZrFr1nqkku+Z3KH2firbpvUN/cKC0LlcZyeeK+fEml2+WV9vtmjrTUryNspdzKQPRzQcB45aZ9FpqvhgmRttCXfUaAHbJ96xa06p1C18RnuDKrDz+KcqPmhp9fmZdwmPm5wDxQ6Zb1l6NfXrGCJ9g3u59lLE/pRUfV1wzbYtPu29SRbOQP7VhCa9fwzb4pnjb0ZGKkfqKcl6n1pn51S9YEYx+bkI/wDlQ2CPK2y7/iuLPWLzTr2NZBKo8K4jHlYeucURpV5HFp9nbaXO0MVvAiPFtXLP/WxOPU+vwKzFby4uLkvPPLLI3d3ckn9TVr6UgmuL9fDOSqOXXPcbTj++D+lLLtRdppVkTNO0GF9Qs3klubwMkhT+XKFHYEcbT6GlQ+i39xptvJE1g026TeGWZV/pAxj9KVMnGhsvW3uh3T9Y0nTbg3Nj0/DHct3naTc54IHmIz2JH2p+TqiKS5e5l0WyaZ8BpWUM7Ae5xQT9Nayq7jaIFAyWaZBj75Ndw9LaxNGs0cMDRkAq4nXDfI+KTdkHcNMvJAaXpUzaPHqVrL/i4L6f0IxiQ8fbGOO1P32r6prgj08maJmGHC8Bverv09o1xpunzpqMMMamZnIV8+UgFjxx78fFe6ZpsNxC19akNDKN8JZCGx35HpR58lX6dkZx1R009poxvDG3kdUPrnJxWhdGaXbR9N/l5UJW5TbIM44Ix/zUlfxQ3mgNFgMpOHz755rnTJFjjSHgKoxilboSrPnfXtJutH1i8024jIktSM59UPKn9v8AmowYI+fWvo3qvpO36miRjK1veR8RXSjLKv8AlIPBH3rM9c/DrUYd0p09hjvJZNuU/JQ8j9Cf0q6MihwaM5YrnAx+lNSgFcGrDJ0xdIzb5YocDKtdK8G8fAdRzUQ9nKGIJTj2bIprFpjDSIyoqDkDBpxF8Nd54Hcmu4bB/EB25/7ea0n8OOjRf3cGo6jE6wWx3BGGBI+eMeuBUbHjBs0L8M+mE0Lp+F7uFP4hOu+dsZKg8hAc9gCO3esw/HLRV03qWPUoIwkF9EGk2jH81eCe/qMelb8h4+KzL8ctOa/0aB4o98sEgbgZIX1pdxHEwTIbsa6bbkbK7Nu6HDqR6jI9K6VPYUwtOxWgPjrxWkdEwlYLicP4kLJ4W0IQQwYE8/otVPpbRJNWvpFbxY4Yoy7yJCXKgYyAByTzwBk1pNrpc9rA1pa3W02wKpBHGxOzxHXfuzjJZWbGcjNVyTfY0YXBO5MX6E/ODXtHx6azg/mbkyyKT51mdAQeRwGx2Ir2qvjP2bXro+g/Xbl2s9YtxMt4+2JVmSUlFWWRUKso4GM7s+3PpXepi4Vbv+FrIkdlNbWluz7tqxvtMjqcnOFb6vT9DUOeotQ82dXOCTkBF/8Az/8AdMnXr47W/jF2yn03HB/vVzyox/DyeSQktdSitmhsrWeS2u7yVoI3Rwvh7ERQ3GVDEOxJyO59aumk6nbahZJLbAYJKlQQdrKcEHHrWYXmv6kwkSC+v3m7+Z2VQuecj7Ems+0rXdR0rU5p9Ou5YwzMWAbyuSeWx70HKxOm4d2fQ2s3cdqsFuzRoLuTYig8s2M8foDQCkqwxxisWbqHUb3WLTULm7ld7Z90aD6QSME/sa2O1uBPbxy4HnUE4pGhosnbO4JTnNGfmYxyar35toY2weB71ESa3KGOfp9xUTot2xfculxNaSR7J0ikGOzoD/vVWv8AQ9FkYubW3+xQVDz607c+ag31C5uWCRg8nk4prbDGEUSthpOnCbZBaxDnghRVstYRAqogAA9hiq9p8bWkJlj87gZwfU01D1zapOYb+yurXb3kKbl/tz/aomPxXBfU+kVDdUWYu9OkT+oqVHHfNN2/VGnSQBhLnio3Vuq7NYMFgWPZfepZRGDUrKInS8Rla1vIsPHu8xHdSfL/AGxUpp/QmhxOJbiIygc7GIwaA1jqS4n1CKXwiqKm07T9X3p3+OSAA5744pXJllR8lhvktLTTHt9PtEgh3AsIsIFUdyT6DHr8getVqVLeFfClgiHO5o5XxzyOQe3BPt3NSNjFe6xHJJDLJCuwhSgyZH5KoQQRtyvf3xwa7n6djvUs5gzAyDfdzxxqrYEO8sTgkvuIXznvnjiptbXAI5oRlUlwCRdPXM0SyR6ZaSo2WDbt3cknnd7kn9a8omxsp9OlvbSK7QLHcHG1xyCqkHAAwSCCeO+aVV9PL7G+THwhg32lSLYhdPKSxT+JOYh/1Ew3k5zkZK8H0B+Mkya1HJczzfwcSzSzxzK0h3bUUL5R5Tj6T2xjPrUaJ5Rkb2FeCSTvvb96iyvwapafG+7ZJXerKbZIo9NheQq5dpIh9bEkH3ONzfJ+KyvqmYwajgQWsbkeZbaPYuc+2TirbrWotCSkZLzY5JOcCs51C6Ml07MMksc1r6c9u6RzMvTi9sCX0qaN5VLjsMmtc6T1CO7stgbmP3rI9AZTJtwPmtT0rShZWyzREguoJAquQIFnaPxIyOOactrKBIT4kSk/vUXZX20bXOakTcgxkrVZdYxeJbAbY4Vzn2oVI0DgBY8/FGWti0ztIxJDc4z2r1tBt5G8Q71IPo9SxrHYYJm+mPIFV/WtJnd3YxkEnvU74V5Z82l2cf5ZOaA1DXtYt1/m2EVwvvER/tTIZWULUIb6EmODIJ9BXOmabezTCS5Rn2/FTk/Uzbi/8FkeYH6QM14vVHUF8jQ29nBYxkEFmTJAogldEfqce6XHAI/poWK3d5ctnbRFvoUqTm6vZ5HPJyaKb/w80sBGyPCk59T6fekfKEXdIZ/NTxrGkcrKkR3Io/pPv/c0291O4AeV2AGPqPbvTWaI0+CK5vraCfcI5ZkRtvfBYA4+eaz7m3Vm9wjCNtHi3lwqgJNOo9g5FKrodF0RQM9O37ZHd52B/YtSq/4s/Zl+Xi/iQbaTqCyyA2axxx5DSy3KKv07uDnny88Gqtd6u8jEWy7F7bs5JojWupLnU90BwsLSb3XaMMQu0fYYGMdqiLZd4LHt6fNej0ugj9pxODk1eVOlI9jQkHcSSxySfWq/qFmGu40RfPLIEUe5NWXsOK50bSl1fqa1tHcoPPICO+VHFWfkMcVitIGnm5ZOR/p7pxk1FIRnKfWPc1sFpbLHAsfsMVDaTo6wNkDzDBLe9WQY9sV5ps7EVRUtZgazn3oPK3P2rmy8WYZVsj2FTmvWwntCPXHpVbsJjYzbHLBagL5LJpkkkY2uSRRrT5GBxQULh4w6Hg0TDF4g4/U5oDIGuZtoJNQd9q8FufMTk+1WWTT/ABI25zmq3qfTVzcEeCBz3Jo2XrsV++6kjZisERd8984o2wEjxrMw5PpRVt0RJbEyyspNGtbLaRYYip3Em+CF1i5kZFiOQtRDEkAEkqudqk8LnvgfOBXOoatFLfPECMA4zXIYEcHIpc0Zw8D6dQl/p7XUbtG6shIZTkEehrmvQayG7wHjV9T/APMbv9J2H+xpUCTSp98vYnTh6K+wZY/MMSOcKKLRdiKo7AYpmJQbp2GWSJdqZ96eBya+hHhmdY4ojpKQRdd6WTzv8VftlGphh5aFtJnsuo9KulGfCukJyfTPNYtfG8LNOlf7o3VEVc7RXdNRuCispyrDIr1nryh3vBxNz37GoDWdM8cb4c7hU48maGknUcEmigNFWtdSeybwLksCDjPpU/Y6ipON/B5zmg9Uit7lCNi59zVQv1vrBibVztz2z/tUoCdGlR6lDtwX5FR+q9TLartjJyKzQ9R3iHbKrBv2ocajNdzhpOQPc0aG6lGmf/0Zlti8sgX4NU/qjqEiHZCx8WT6fgetCpDJdL552WMH6VqvdTlIOoILSMAJFbD17liWz98Yq7T41LIkyrPke1giE4znzepqU07UML4chyBx81EocHmkvlbxB29a9Bk08MsdrRy8eonilaLajq6gg8Ui3tzUNb3XhjtkGjopw3Y1xtR+Ka5gdXD+TT4mG0q4Ei45IpVzHpMvo6S1OL2Q0bGKNUA5PJPyadiz60MXLP8AbiiYq94eKHweKj9RbbJG3YBgaOJwKjNUO5CPiqs0d0KHxtqVmvdIaouoaTHGT/NhG0gnkj3qXkfHrWN9Ma1LYuk8bE7fKy57itOh1JL23WaJxtb09q8vqcHTla7Hcw5lKIXLPj1oGefIPNJ34OOajbmUqeTWYvs8uJyoOKi7u7QLmQinbm4G0j1qJulWUfzDgU6QGRWrTwzk7OT74pi1iPB5xRZto5H2pzzRBtxGNgPJHpREYVYlfLlsIMlz7AcmqRqN2L7WnvY2cxSyt4QfuEHAH2qza7O1jockUZKzzkIGHBCnvVWkt2We0UcAKQK26PG3LcZs01VBWDu4NOonlKnsRiudpE20j0p9EruRRzmxqAlGMRPb6c0ba4dyuSD6UJPEw2uvdTRMWAyuOKdIWyQCPj/rY/8ATn/mlSVlKjIpU+xegb5eyN9T96LhPFKlR8lQ4301H3QB3Z9qVKhP6jwIuwkZHkwexq7dMXcsN8kat5JFyyntnOKVKubqEnE24vsXx0ULkCoTUuCce1KlXEmuTox7EDPI3vTX1fVzSpUCwJtYI1VnA8wpmJBJdhW7ZxSpUBJdiI6rJOrSwk+SEhU+1RdwP8Vb/ArylXoNIl00czP9jrJa559BRaAYpUq2xMjOnAKdqZjOFI9jSpU4A+M+QV5SpUSH/9k=", width=100)
-    code_explanation_input = st.text_area("Ingrese el código que desea explicar:", height=200)
-
-    if st.button("Explicar Código"):
-        if code_explanation_input:
-            try:
-                response = model.generate_content(f"Por favor, explique el siguiente código:\n{code_explanation_input}")
-                st.subheader("Explicación del Código:")
-                st.write(response.text)
-            except Exception as e:
-                st.error(f"Ocurrió un error: {e}")
-        else:
-            st.warning("Por favor, ingrese algo de código para explicar.")
+    if st.button("Explicar"):
+        try:
+            response = model.generate_content(f"Imaginá que sos Lionel Messi y tenés que explicarle este código a alguien que está aprendiendo. Sé humilde, claro y amigable:\n\n{input_usuario}")
+            st.markdown("Messi responde:")
+            st.write(response.text)
+        except Exception as e:
+            st.error(f"Error al explicar el código: {e}")
