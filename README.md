@@ -14,7 +14,10 @@ Python 3.10+
 Streamlit
 Google Gemini API (modelo: gemini-2.0-flash)
 Git & GitHub
+
 Instalación y ejecución
+
+1-
 
 Clona el repositorio en la terminal:
 git clone https://github.com/RomanGuilhem/CodeAssist-AI.git
@@ -23,12 +26,16 @@ luego:
 
 cd CodeAssist-AI
 
+2-
+
 Instala las dependencias:
 pip install -r requirements.txt
 
+3-
 Crea la carpeta .streamlit dentro de la carpeta CodeAssist-AI y crea dentro un archivo que se llame secrets.toml con el siguiente contenido:
 api_key = "tu clave api"
 
+4-
 Ejecuta la app:
 python -m streamlit run app.py
 
